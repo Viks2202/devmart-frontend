@@ -6,13 +6,11 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
   const { isAuthenticated, isAdmin, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner size="xl" />
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Spinner size="xl" />
+    </div>
+  )
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />

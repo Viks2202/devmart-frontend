@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
-import { FiFilter, FiX, FiChevronDown } from "react-icons/fi"
+import { FiFilter, FiX } from "react-icons/fi"
 import API from "../utils/api"
 import ProductCard from "../components/product/ProductCard"
 import Spinner from "../components/common/Spinner"
 import EmptyState from "../components/common/EmptyState"
-import Button from "../components/common/Button"
 
 const CATEGORIES = ["electronics", "clothing", "books", "food", "other"]
 const SORT_OPTIONS = [
@@ -30,9 +29,8 @@ export default function Products() {
   const maxPrice = searchParams.get("maxPrice") || ""
   const limit = 12
 
-  useEffect(() => {
-    fetchProducts()
-  }, [category, search, sort, page, minPrice, maxPrice])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, maxPrice])
 
   const fetchProducts = async () => {
     setLoading(true)

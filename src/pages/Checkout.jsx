@@ -1,14 +1,14 @@
 import { useState } from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
-import { FiMapPin, FiCreditCard, FiCheck } from "react-icons/fi"
+import { FiCheck } from "react-icons/fi"
 import { useCart } from "../context/CartContext"
 import Button from "../components/common/Button"
 import API from "../utils/api"
 import toast from "react-hot-toast"
 
 export default function Checkout() {
-  const { cart, clearCart } = useCart()
-  const location = useLocation()
+const { cart } = useCart()
+    const location = useLocation()
   const navigate = useNavigate()
   const { couponData, couponCode } = location.state || {}
 
