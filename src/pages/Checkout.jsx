@@ -7,8 +7,8 @@ import API from "../utils/api"
 import toast from "react-hot-toast"
 
 export default function Checkout() {
-const { cart } = useCart()
-    const location = useLocation()
+  const { cart } = useCart()
+  const location = useLocation()
   const navigate = useNavigate()
   const { couponData, couponCode } = location.state || {}
 
@@ -31,25 +31,20 @@ const { cart } = useCart()
       toast.error("Enter valid 6-digit pincode")
       return
     }
-
     setLoading(true)
     try {
-      // Step 1: Create order in DB
       const { data } = await API.post("/orders", {
         shippingAddress: address,
         paymentMethod,
         couponCode: couponData ? couponCode : undefined
       })
-
       const order = data.order
 
       if (paymentMethod === "cod") {
-        // COD: show success directly
         setPlacedOrder(order)
         setOrderPlaced(true)
         toast.success("Order placed successfully!")
       } else {
-        // Online: load Razorpay
         await handleRazorpayPayment(order)
       }
     } catch (err) {
@@ -59,19 +54,21 @@ const { cart } = useCart()
     }
   }
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) { resolve(); return }
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.onload = resolve
+      document.body.appendChild(script)
+    })
+  }
+
   const handleRazorpayPayment = async (order) => {
     try {
-      // Step 2: Create Razorpay payment order
-      const { data: paymentData } = await API.post("/payment/create", {
-        orderId: order._id
-      })
+      const { data: paymentData } = await API.post("/payment/create", { orderId: order._id })
+      await loadRazorpayScript()
 
-      // Step 3: Load Razorpay script if not loaded
-      if (!window.Razorpay) {
-        await loadRazorpayScript()
-      }
-
-      // Step 4: Open Razorpay checkout
       const rzp = new window.Razorpay({
         key: paymentData.key,
         amount: paymentData.amount,
@@ -79,13 +76,8 @@ const { cart } = useCart()
         name: "DevMart",
         description: `Order #${order._id.slice(-8).toUpperCase()}`,
         order_id: paymentData.razorpayOrderId,
-        prefill: {
-          name: "Vikas Sharma",
-          email: "vikas@gmail.com"
-        },
         theme: { color: "#e94560" },
         handler: async function(response) {
-          // Step 5: Verify payment
           try {
             await API.post("/payment/verify", {
               razorpay_order_id: response.razorpay_order_id,
@@ -97,33 +89,22 @@ const { cart } = useCart()
             setOrderPlaced(true)
             toast.success("Payment successful! Order confirmed.")
           } catch {
-            toast.error("Payment verification failed. Contact support.")
+            toast.error("Payment verification failed.")
           }
         },
         modal: {
           ondismiss: function() {
-            toast("Payment cancelled. Your order is saved as pending.")
-            navigate(`/orders`)
+            toast("Payment cancelled.")
+            navigate("/orders")
           }
         }
       })
-
       rzp.open()
-    } catch (err) {
+    } catch {
       toast.error("Failed to initialize payment. Try COD.")
     }
   }
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement("script")
-      script.src = "https://checkout.razorpay.com/v1/checkout.js"
-      script.onload = resolve
-      document.body.appendChild(script)
-    })
-  }
-
-  // Success screen
   if (orderPlaced) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -132,18 +113,12 @@ const { cart } = useCart()
             <FiCheck className="text-green-500" size={40} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Order Placed!</h1>
-          <p className="text-gray-500 mb-2">
-            Order #{placedOrder?._id?.slice(-8).toUpperCase()}
-          </p>
-          <p className="text-gray-500 mb-6">
-            Thank you for shopping with DevMart. We'll deliver soon!
-          </p>
+          <p className="text-gray-500 mb-2">Order #{placedOrder?._id?.slice(-8).toUpperCase()}</p>
+          <p className="text-gray-500 mb-6">Thank you for shopping with DevMart!</p>
           <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">Amount paid</span>
-              <span className="font-bold text-gray-900">
-                ₹{(placedOrder?.finalAmount || placedOrder?.totalPrice)?.toLocaleString("en-IN")}
-              </span>
+              <span className="text-gray-600">Amount</span>
+              <span className="font-bold">₹{(placedOrder?.finalAmount || placedOrder?.totalPrice)?.toLocaleString("en-IN")}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">Payment</span>
@@ -169,16 +144,13 @@ const { cart } = useCart()
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Left: Address + Payment */}
           <div className="lg:col-span-3 space-y-5">
-
-            {/* Shipping Address */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold">1</div>
                 Shipping Address
               </h2>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
                   <input
@@ -221,7 +193,6 @@ const { cart } = useCart()
               </div>
             </div>
 
-            {/* Payment Method */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center text-white text-sm font-bold">2</div>
@@ -229,33 +200,20 @@ const { cart } = useCart()
               </h2>
               <div className="space-y-3">
                 {[
-                  {
-                    value: "cod",
-                    label: "Cash on Delivery",
-                    desc: "Pay when your order arrives",
-                    icon: "💵"
-                  },
-                  {
-                    value: "online",
-                    label: "Pay Online",
-                    desc: "UPI, Cards, Net Banking via Razorpay",
-                    icon: "💳"
-                  }
+                  { value: "cod", label: "Cash on Delivery", desc: "Pay when order arrives", icon: "💵" },
+                  { value: "online", label: "Pay Online", desc: "UPI, Cards, Net Banking via Razorpay", icon: "💳" }
                 ].map(method => (
                   <label
                     key={method.value}
                     className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all
-                      ${paymentMethod === method.value
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                      }`}
+                      ${paymentMethod === method.value ? "border-primary-500 bg-primary-50" : "border-gray-200 hover:border-gray-300"}`}
                   >
                     <input
                       type="radio"
                       value={method.value}
                       checked={paymentMethod === method.value}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="text-primary-500 w-4 h-4"
+                      className="w-4 h-4 text-primary-500"
                     />
                     <span className="text-2xl">{method.icon}</span>
                     <div>
@@ -271,12 +229,10 @@ const { cart } = useCart()
             </div>
           </div>
 
-          {/* Right: Order Summary */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 sticky top-24">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
 
-              {/* Items */}
               <div className="space-y-3 max-h-48 overflow-y-auto mb-4">
                 {cart.items?.map(item => (
                   <div key={item._id} className="flex items-center gap-3">
@@ -298,7 +254,6 @@ const { cart } = useCart()
                 ))}
               </div>
 
-              {/* Totals */}
               <div className="border-t border-gray-100 pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Subtotal</span>
@@ -320,19 +275,10 @@ const { cart } = useCart()
                 </div>
               </div>
 
-              <Button
-                onClick={handlePlaceOrder}
-                loading={loading}
-                fullWidth
-                size="lg"
-                className="mt-5"
-              >
+              <Button onClick={handlePlaceOrder} loading={loading} fullWidth size="lg" className="mt-5">
                 {paymentMethod === "cod" ? "Place Order (COD)" : `Pay ₹${finalAmount?.toLocaleString("en-IN")}`}
               </Button>
-
-              <p className="text-center text-xs text-gray-400 mt-3">
-                🔒 100% Secure Checkout
-              </p>
+              <p className="text-center text-xs text-gray-400 mt-3">🔒 100% Secure Checkout</p>
             </div>
           </div>
         </div>

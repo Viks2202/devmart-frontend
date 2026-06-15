@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSearchParams } from "react-router-dom"
 import { FiFilter, FiX } from "react-icons/fi"
 import API from "../utils/api"
@@ -29,10 +29,7 @@ export default function Products() {
   const maxPrice = searchParams.get("maxPrice") || ""
   const limit = 12
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, maxPrice])
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -43,16 +40,19 @@ useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, ma
       if (maxPrice) params.set("maxPrice", maxPrice)
       params.set("page", page)
       params.set("limit", limit)
-
       const { data } = await API.get(`/products?${params}`)
-      setProducts(data.products)
-      setPagination(data.pagination)
+      setProducts(data.products || [])
+      setPagination(data.pagination || {})
     } catch {
       setProducts([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [category, search, sort, page, minPrice, maxPrice])
+
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams)
@@ -70,13 +70,16 @@ useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, ma
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <h1 className="text-xl font-bold text-gray-900">
-                {search ? `Results for "${search}"` : category ? category.charAt(0).toUpperCase() + category.slice(1) : "All Products"}
+                {search
+                  ? `Results for "${search}"`
+                  : category
+                    ? `${category.charAt(0).toUpperCase() + category.slice(1)}`
+                    : "All Products"}
               </h1>
               {pagination.total > 0 && (
                 <span className="text-sm text-gray-500">({pagination.total} products)</span>
@@ -90,7 +93,7 @@ useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, ma
               >
                 <FiFilter size={16} />
                 Filters
-                {hasFilters && <span className="w-2 h-2 bg-primary-500 rounded-full"></span>}
+                {hasFilters && <span className="w-2 h-2 bg-primary-500 rounded-full" />}
               </button>
 
               <select
@@ -105,11 +108,9 @@ useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, ma
             </div>
           </div>
 
-          {/* Filter Panel */}
           {showFilters && (
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex flex-wrap items-end gap-6">
-                {/* Category filter */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Category</label>
                   <div className="flex flex-wrap gap-2">
@@ -133,7 +134,6 @@ useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, ma
                   </div>
                 </div>
 
-                {/* Price filter */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Price Range (₹)</label>
                   <div className="flex items-center gap-2">
@@ -169,7 +169,6 @@ useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, ma
         </div>
       </div>
 
-      {/* Products Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading ? (
           <Spinner size="xl" className="py-20" />
@@ -189,56 +188,54 @@ useEffect(() => { fetchProducts() }, [category, search, sort, page, minPrice, ma
               ))}
             </div>
 
-           
-            {/* Pagination */}
-{pagination.totalPages > 1 && (
-  <div className="flex items-center justify-center gap-2 mt-12">
-    <button
-      onClick={() => {
-        const next = new URLSearchParams(searchParams)
-        next.set("page", String(page - 1))
-        setSearchParams(next)
-        window.scrollTo(0, 0)
-      }}
-      disabled={!pagination.hasPrevPage}
-      className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-    >
-      ← Previous
-    </button>
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-12">
+                <button
+                  onClick={() => {
+                    const next = new URLSearchParams(searchParams)
+                    next.set("page", String(page - 1))
+                    setSearchParams(next)
+                    window.scrollTo(0, 0)
+                  }}
+                  disabled={!pagination.hasPrevPage}
+                  className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 bg-white transition-colors"
+                >
+                  ← Previous
+                </button>
 
-    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
-      <button
-        key={p}
-        onClick={() => {
-          const next = new URLSearchParams(searchParams)
-          next.set("page", String(p))
-          setSearchParams(next)
-          window.scrollTo(0, 0)
-        }}
-        className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors
-          ${p === page
-            ? "bg-primary-500 text-white"
-            : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-          }`}
-      >
-        {p}
-      </button>
-    ))}
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      const next = new URLSearchParams(searchParams)
+                      next.set("page", String(p))
+                      setSearchParams(next)
+                      window.scrollTo(0, 0)
+                    }}
+                    className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors
+                      ${p === page
+                        ? "bg-primary-500 text-white"
+                        : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                      }`}
+                  >
+                    {p}
+                  </button>
+                ))}
 
-    <button
-      onClick={() => {
-        const next = new URLSearchParams(searchParams)
-        next.set("page", String(page + 1))
-        setSearchParams(next)
-        window.scrollTo(0, 0)
-      }}
-      disabled={!pagination.hasNextPage}
-      className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-    >
-      Next →
-    </button>
-  </div>
-)}
+                <button
+                  onClick={() => {
+                    const next = new URLSearchParams(searchParams)
+                    next.set("page", String(page + 1))
+                    setSearchParams(next)
+                    window.scrollTo(0, 0)
+                  }}
+                  disabled={!pagination.hasNextPage}
+                  className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 bg-white transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
