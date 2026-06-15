@@ -6,7 +6,6 @@ const API = axios.create({
   timeout: 30000
 })
 
-// Attach token to every request automatically
 API.interceptors.request.use(
   config => {
     const token = localStorage.getItem("accessToken")
@@ -18,7 +17,6 @@ API.interceptors.request.use(
   error => Promise.reject(error)
 )
 
-// Handle token expiry
 API.interceptors.response.use(
   response => response,
   async error => {
@@ -26,7 +24,6 @@ API.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
-
       try {
         const { data } = await API.post("/auth/refresh")
         localStorage.setItem("accessToken", data.accessToken)

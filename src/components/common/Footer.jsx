@@ -21,7 +21,7 @@ export default function Footer() {
                 className="hover:text-white transition-colors">
                 <FiGithub size={20} />
               </a>
-              <a href="https://linkedin.com/in/your-profile" target="_blank" rel="noreferrer"
+              <a href="https://linkedin.com" target="_blank" rel="noreferrer"
                 className="hover:text-white transition-colors">
                 <FiLinkedin size={20} />
               </a>

@@ -191,39 +191,56 @@ export default function Products() {
               ))}
             </div>
 
+           
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-12">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!pagination.hasPrevPage}
-                  onClick={() => updateParam("page", String(page - 1))}
-                >
-                  Previous
-                </Button>
-                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                  .filter(p => Math.abs(p - page) <= 2)
-                  .map(p => (
-                    <button
-                      key={p}
-                      onClick={() => updateParam("page", String(p))}
-                      className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors
-                        ${p === page ? "bg-primary-500 text-white" : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"}`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={!pagination.hasNextPage}
-                  onClick={() => updateParam("page", String(page + 1))}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+{pagination.totalPages > 1 && (
+  <div className="flex items-center justify-center gap-2 mt-12">
+    <button
+      onClick={() => {
+        const next = new URLSearchParams(searchParams)
+        next.set("page", String(page - 1))
+        setSearchParams(next)
+        window.scrollTo(0, 0)
+      }}
+      disabled={!pagination.hasPrevPage}
+      className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+    >
+      ← Previous
+    </button>
+
+    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
+      <button
+        key={p}
+        onClick={() => {
+          const next = new URLSearchParams(searchParams)
+          next.set("page", String(p))
+          setSearchParams(next)
+          window.scrollTo(0, 0)
+        }}
+        className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors
+          ${p === page
+            ? "bg-primary-500 text-white"
+            : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+          }`}
+      >
+        {p}
+      </button>
+    ))}
+
+    <button
+      onClick={() => {
+        const next = new URLSearchParams(searchParams)
+        next.set("page", String(page + 1))
+        setSearchParams(next)
+        window.scrollTo(0, 0)
+      }}
+      disabled={!pagination.hasNextPage}
+      className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+    >
+      Next →
+    </button>
+  </div>
+)}
           </>
         )}
       </div>
