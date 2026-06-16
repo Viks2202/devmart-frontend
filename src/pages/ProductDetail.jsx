@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, Link } from "react-router-dom"
-import { FiMapPin, FiClock, FiDollarSign, FiBriefcase, FiUsers, FiChevronRight, FiBookmark, FiMinus, FiPlus } from "react-icons/fi"
+import { FiChevronRight, FiBookmark, FiMinus, FiPlus } from "react-icons/fi"
 import API from "../utils/api"
 import { useCart } from "../context/CartContext"
 import { useAuth } from "../context/AuthContext"
