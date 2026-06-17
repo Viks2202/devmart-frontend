@@ -4,6 +4,7 @@ import { FiArrowRight, FiShield, FiTruck, FiRefreshCw, FiHeadphones } from "reac
 import API from "../utils/api"
 import ProductCard from "../components/product/ProductCard"
 import Spinner from "../components/common/Spinner"
+import Recommendations from "../components/product/Recommendations"
 
 const categories = [
   { name: "Electronics", emoji: "📱", value: "electronics", color: "from-blue-400 to-blue-600" },
@@ -125,6 +126,8 @@ export default function Home() {
           )}
         </div>
       </section>
+      <Recommendations />
+
 
       {/* Features */}
       <section className="py-16 bg-white">

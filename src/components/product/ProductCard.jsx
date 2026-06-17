@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
 import { FiHeart, FiShoppingCart, FiStar } from "react-icons/fi"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useCart } from "../../context/CartContext"
 import { useAuth } from "../../context/AuthContext"
 import API from "../../utils/api"
@@ -12,13 +12,19 @@ export default function ProductCard({ product }) {
   const { isAuthenticated } = useAuth()
   const [addingCart, setAddingCart] = useState(false)
   const [wishlisted, setWishlisted] = useState(false)
+  const [checkingWishlist, setCheckingWishlist] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated && product?._id) {
+      API.get(`/wishlist/check/${product._id}`)
+        .then(({ data }) => setWishlisted(data.isWishlisted))
+        .catch(() => {})
+    }
+  }, [isAuthenticated, product?._id])
 
   const handleAddToCart = async (e) => {
     e.preventDefault()
-    if (!isAuthenticated) {
-      toast.error("Please login to add to cart")
-      return
-    }
+    if (!isAuthenticated) { toast.error("Please login to add to cart"); return }
     setAddingCart(true)
     try {
       await addToCart(product._id, 1)
@@ -32,10 +38,8 @@ export default function ProductCard({ product }) {
 
   const handleWishlist = async (e) => {
     e.preventDefault()
-    if (!isAuthenticated) {
-      toast.error("Please login to use wishlist")
-      return
-    }
+    if (!isAuthenticated) { toast.error("Please login to use wishlist"); return }
+    setCheckingWishlist(true)
     try {
       if (wishlisted) {
         await API.delete(`/wishlist/item/${product._id}`)
@@ -46,8 +50,10 @@ export default function ProductCard({ product }) {
         setWishlisted(true)
         toast.success("Added to wishlist!")
       }
-    } catch {
-      toast.error("Already in wishlist")
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Something went wrong")
+    } finally {
+      setCheckingWishlist(false)
     }
   }
 
@@ -56,7 +62,6 @@ export default function ProductCard({ product }) {
   return (
     <Link to={`/products/${product._id}`} className="group">
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 h-full flex flex-col">
-        {/* Image */}
         <div className="relative overflow-hidden bg-gray-50" style={{ paddingTop: "70%" }}>
           {product.images?.[0]?.url ? (
             <img
@@ -70,11 +75,14 @@ export default function ProductCard({ product }) {
             </div>
           )}
 
-          {/* Wishlist button */}
           <button
             onClick={handleWishlist}
-            className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-all
-              ${wishlisted ? "bg-primary-500 text-white" : "bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-500"}`}
+            disabled={checkingWishlist}
+            className={`absolute top-3 right-3 p-2 rounded-full shadow-md transition-all z-10
+              ${wishlisted
+                ? "bg-primary-500 text-white"
+                : "bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-500"
+              } disabled:opacity-50`}
           >
             <FiHeart size={16} className={wishlisted ? "fill-current" : ""} />
           </button>
@@ -86,7 +94,6 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* Content */}
         <div className="p-4 flex flex-col flex-grow">
           <Badge variant="default" className="self-start mb-2 capitalize">{product.category}</Badge>
           <h3 className="font-semibold text-gray-900 line-clamp-2 mb-1 text-sm leading-snug">
@@ -95,9 +102,7 @@ export default function ProductCard({ product }) {
 
           <div className="flex items-center gap-1 mb-3">
             <FiStar className="text-yellow-400 fill-current" size={12} />
-            <span className="text-xs text-gray-600">
-              {product.ratings?.toFixed(1) || "0.0"}
-            </span>
+            <span className="text-xs text-gray-600">{product.ratings?.toFixed(1) || "0.0"}</span>
             <span className="text-xs text-gray-400">({product.numReviews || 0})</span>
           </div>
 
