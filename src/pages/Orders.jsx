@@ -7,6 +7,7 @@ import Badge from "../components/common/Badge"
 import Button from "../components/common/Button"
 import EmptyState from "../components/common/EmptyState"
 import toast from "react-hot-toast"
+import { useSocket } from "../context/SocketContext"
 
 const statusVariant = {
   pending: "warning",
@@ -23,10 +24,21 @@ export default function Orders() {
   const [loading, setLoading] = useState(true)
   const [expandedOrder, setExpandedOrder] = useState(null)
   const [cancelling, setCancelling] = useState(null)
+  const { lastOrderUpdate } = useSocket()
 
   useEffect(() => {
     fetchOrders()
   }, [])
+
+  // Live-update the matching order's status the instant a Socket.io event arrives
+  useEffect(() => {
+    if (!lastOrderUpdate) return
+    setOrders(prev =>
+      prev.map(o =>
+        o._id === lastOrderUpdate.orderId ? { ...o, status: lastOrderUpdate.status } : o
+      )
+    )
+  }, [lastOrderUpdate])
 
   const fetchOrders = async () => {
     try {
